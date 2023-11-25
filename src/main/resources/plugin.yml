@@ -1,0 +1,4 @@
+name: MafanaRankManager
+version: '${project.version}'
+main: me.tahacheji.mafana.MafanaRankManager
+api-version: 1.20
