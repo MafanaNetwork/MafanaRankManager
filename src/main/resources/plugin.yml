@@ -1,4 +1,37 @@
+depend: [MafanaMysqlAPI]
 name: MafanaRankManager
 version: '${project.version}'
 main: me.tahacheji.mafana.MafanaRankManager
 api-version: 1.20
+
+permissions:
+  mafana.admin:
+    default: op
+  mafana.copper:
+    default: false
+  mafana.gold:
+    default: false
+  mafana.silver:
+    default: false
+  mafana.diamond:
+    default: false
+  mafana.friend:
+    default: false
+  mafana.staff:
+    default: false
+  mafana.moderator:
+    default: false
+  mafana.builder:
+    default: false
+  mafana.game.designer:
+    default: false
+  mafana.game.developer:
+    default: false
+  mafana.game.manager:
+    default: false
+  mafana.general.manager:
+    default: false
+  mafana.owner:
+    default: false
+
+
