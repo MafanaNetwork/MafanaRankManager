@@ -43,14 +43,14 @@ public class Rank implements RankEvents {
         team.setPrefix(rankDisplayName + " ");
         team.addPlayer(player);
 
-        for(RankPermission rankPermission : rankPermissionList) {
+        for (RankPermission rankPermission : rankPermissionList) {
             Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin(rankPermission.getPlugin());
-            if(plugin != null) {
+            if (plugin != null) {
                 PermissionAttachment x = player.addAttachment(plugin);
                 x.setPermission(rankPermission.getPermission(), true);
             }
         }
-        if(MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player) != null) {
+        if (MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player) != null) {
             for (RankPermission rankPermission : MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player)) {
                 Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin(rankPermission.getPlugin());
                 if (plugin != null) {
@@ -59,6 +59,8 @@ public class Rank implements RankEvents {
                 }
             }
         }
+        player.recalculatePermissions();
+        player.updateCommands();
     }
 
     public void setRankID(String rankID) {
