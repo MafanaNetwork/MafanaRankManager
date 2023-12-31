@@ -50,8 +50,8 @@ public class Rank implements RankEvents {
                 x.setPermission(rankPermission.getPermission(), true);
             }
         }
-        if (MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player) != null) {
-            for (RankPermission rankPermission : MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player)) {
+        if (MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player.getUniqueId()) != null) {
+            for (RankPermission rankPermission : MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player.getUniqueId())) {
                 Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin(rankPermission.getPlugin());
                 if (plugin != null) {
                     PermissionAttachment x = player.addAttachment(plugin);

@@ -19,20 +19,20 @@ public class RankEvent implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         event.setJoinMessage("");
-        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player);
+        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId());
         if(rank != null) {
             rank.registerPlayerWithRank(player);
             rank.playerJoinEvent(player, event);
         } else {
-            MafanaRankManager.getInstance().getPlayerRankDatabase().setPlayerRank(player, "COPPER");
-            MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player).registerPlayerWithRank(player);
-            MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player).playerJoinEvent(player, event);
+            MafanaRankManager.getInstance().getPlayerRankDatabase().setPlayerRank(player.getUniqueId(), "COPPER");
+            MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId()).registerPlayerWithRank(player);
+            MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId()).playerJoinEvent(player, event);
         }
         new BukkitRunnable() {
             @Override
             public void run() {
                 if(player.isOnline()) {
-                    MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player).whileOnline(player);
+                    MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId()).whileOnline(player);
                 } else {
                     this.cancel();
                 }
@@ -42,7 +42,7 @@ public class RankEvent implements Listener {
 
     @EventHandler
     public void onLeave(PlayerQuitEvent event) {
-        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(event.getPlayer());
+        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(event.getPlayer().getUniqueId());
         if(rank != null) {
             rank.playerQuitEvent(event.getPlayer(), event);
         }
@@ -50,7 +50,7 @@ public class RankEvent implements Listener {
 
     @EventHandler
     public void talkEvent(AsyncPlayerChatEvent event) {
-        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(event.getPlayer());
+        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(event.getPlayer().getUniqueId());
         if(rank != null) {
             rank.playerTalkEvent(event.getPlayer(), event);
         }
@@ -58,7 +58,7 @@ public class RankEvent implements Listener {
 
     @EventHandler
     public void onBreak(BlockBreakEvent event) {
-        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(event.getPlayer());
+        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(event.getPlayer().getUniqueId());
         if(rank != null) {
             rank.playerBreakBlockEvent(event.getPlayer(), event);
         }
@@ -66,7 +66,7 @@ public class RankEvent implements Listener {
 
     @EventHandler
     public void onPlace(BlockPlaceEvent event) {
-        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(event.getPlayer());
+        Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(event.getPlayer().getUniqueId());
         if(rank != null) {
             rank.playerPlaceBlockEvent(event.getPlayer(), event);
         }

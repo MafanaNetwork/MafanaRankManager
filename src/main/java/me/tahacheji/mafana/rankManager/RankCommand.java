@@ -16,7 +16,7 @@ public class RankCommand {
     public void setPlayerRank(CommandSender sender, @Param(name = "player") OfflinePlayer target, @Param(name = "rankID", concated = true) String rankID) {
         Rank rank = MafanaRankManager.getInstance().getRankDatabase().getRank(rankID);
         if(rank != null) {
-            MafanaRankManager.getInstance().getPlayerRankDatabase().setPlayerRank(target, rankID);
+            MafanaRankManager.getInstance().getPlayerRankDatabase().setPlayerRank(target.getUniqueId(), rankID);
             sender.sendMessage(ChatColor.GREEN + "Rank updated successfully from player: " + target.getName());
         } else {
             sender.sendMessage(ChatColor.RED + "Rank not found.");

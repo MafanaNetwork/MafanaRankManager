@@ -6,6 +6,7 @@ import me.TahaCheji.mysqlData.MySQL;
 import me.TahaCheji.mysqlData.MysqlValue;
 import me.TahaCheji.mysqlData.SQLGetter;
 import me.tahacheji.mafana.MafanaRankManager;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
 import java.util.List;
@@ -19,32 +20,31 @@ public class PlayerRankDatabase extends MySQL {
         super("162.254.145.231", "3306", "51252", "51252", "346a1ef0fc");
     }
 
-    public void setPlayerRank(OfflinePlayer offlinePlayer, String id) {
+    public void setPlayerRank(UUID offlinePlayer, String id) {
         Rank rank = MafanaRankManager.getInstance().getRankDatabase().getRank(id);
         if(rank != null) {
-            UUID uuid = offlinePlayer.getUniqueId();
-            sqlGetter.setString(new MysqlValue("NAME", uuid, offlinePlayer.getName()));
-            sqlGetter.setString(new MysqlValue("RANK_ID", uuid, id));
-            sqlGetter.setString(new MysqlValue("PERMISSIONS", uuid, ""));
+            sqlGetter.setString(new MysqlValue("NAME", offlinePlayer, Bukkit.getOfflinePlayer(offlinePlayer)));
+            sqlGetter.setString(new MysqlValue("RANK_ID", offlinePlayer, id));
+            sqlGetter.setString(new MysqlValue("PERMISSIONS", offlinePlayer, ""));
         }
     }
 
-    public Rank getPlayerRank(OfflinePlayer offlinePlayer) {
-        if(sqlGetter.exists(offlinePlayer.getUniqueId())) {
-            return MafanaRankManager.getInstance().getRankDatabase().getRank(sqlGetter.getString(offlinePlayer.getUniqueId(), new MysqlValue("RANK_ID")));
+    public Rank getPlayerRank(UUID offlinePlayer) {
+        if(sqlGetter.exists(offlinePlayer)) {
+            return MafanaRankManager.getInstance().getRankDatabase().getRank(sqlGetter.getString(offlinePlayer, new MysqlValue("RANK_ID")));
         }
         return null;
     }
 
-    public List<RankPermission> getPermissions(OfflinePlayer offlinePlayer) {
+    public List<RankPermission> getPermissions(UUID offlinePlayer) {
         Gson gson = new Gson();
-        return gson.fromJson(sqlGetter.getString(offlinePlayer.getUniqueId(), new MysqlValue("PERMISSIONS")), new TypeToken<List<RankPermission>>() {
+        return gson.fromJson(sqlGetter.getString(offlinePlayer, new MysqlValue("PERMISSIONS")), new TypeToken<List<RankPermission>>() {
         }.getType());
     }
 
-    public void setPermissions(OfflinePlayer player, List<RankPermission> rankPermissionList) {
+    public void setPermissions(UUID player, List<RankPermission> rankPermissionList) {
         Gson gson = new Gson();
-        sqlGetter.setString(new MysqlValue("PERMISSIONS", player.getUniqueId(), gson.toJson(rankPermissionList)));
+        sqlGetter.setString(new MysqlValue("PERMISSIONS", player, gson.toJson(rankPermissionList)));
     }
 
     @Override
