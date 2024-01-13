@@ -6,7 +6,10 @@ import me.tahacheji.mafana.commandExecutor.paramter.Param;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.checkerframework.checker.units.qual.C;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +59,14 @@ public class PlayerRankCommand {
         } else {
             sender.sendMessage(ChatColor.RED + "Permission not found for player: " + target.getName());
         }
+    }
+
+    @Command(names = {"mrm setColor", "mafanarank setColor", "mafanarankmanager setColor"}, permission = "mafana.admin", playerOnly = false)
+    public void changePlayerColor(CommandSender player, @Param(name = "target") OfflinePlayer target, @Param(name = "red") int r, @Param(name = "blue") int b, @Param(name = "green") int g) {
+        net.md_5.bungee.api.ChatColor chatColor = net.md_5.bungee.api.ChatColor.of(new Color(r,b,g));
+        String x = chatColor + "";
+        MafanaRankManager.getInstance().getPlayerRankDatabase().setColor(target.getUniqueId(), x);
+        player.sendMessage(ChatColor.GREEN + "Color updated successfully for player: " + target.getName());
     }
 
 }

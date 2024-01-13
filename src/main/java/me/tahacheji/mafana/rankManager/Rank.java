@@ -1,7 +1,9 @@
 package me.tahacheji.mafana.rankManager;
 
 import me.tahacheji.mafana.MafanaRankManager;
+import me.tahacheji.mafana.commandExecutor.paramter.impl.ChatColorProcessor;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.Plugin;
@@ -40,7 +42,11 @@ public class Rank implements RankEvents {
         if (team == null) {
             team = scoreboard.registerNewTeam(rankID);
         }
-        team.setPrefix(rankDisplayName + " ");
+        if(MafanaRankManager.getInstance().getPlayerRankDatabase().extractChatColor(player.getUniqueId()) != null) {
+            team.setPrefix(rankDisplayName + " " + MafanaRankManager.getInstance().getPlayerRankDatabase().extractChatColor(player.getUniqueId()));
+        } else {
+            team.setPrefix(rankDisplayName + " ");
+        }
         team.addPlayer(player);
 
         for (RankPermission rankPermission : rankPermissionList) {
@@ -61,6 +67,11 @@ public class Rank implements RankEvents {
         }
         player.recalculatePermissions();
         player.updateCommands();
+    }
+
+    public ChatColor convertToBukkitChatColor(net.md_5.bungee.api.ChatColor bungeeChatColor) {
+        String code = bungeeChatColor.toString();
+        return ChatColor.getByChar(code.charAt(1));
     }
 
     public void setRankID(String rankID) {

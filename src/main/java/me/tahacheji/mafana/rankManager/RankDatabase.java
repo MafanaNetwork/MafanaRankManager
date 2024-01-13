@@ -7,6 +7,7 @@ import me.TahaCheji.mysqlData.MysqlValue;
 import me.TahaCheji.mysqlData.SQLGetter;
 import me.tahacheji.mafana.util.EncryptionUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,6 +52,38 @@ public class RankDatabase extends MySQL {
             sqlGetter.setInt(new MysqlValue("RANK_PRIORITY", uuid, rank.getRankPriority()));
             sqlGetter.setString(new MysqlValue("RANK_PERMISSIONS", uuid, gson.toJson(rank.getRankPermissionList())));
         }
+    }
+
+    public List<Rank> getAllRanks() {
+        List<Rank> allRanks = new ArrayList<>();
+        try {
+            List<UUID> rankUUIDs = sqlGetter.getAllUUID(new MysqlValue("RANK_ID"));
+            List<String> rankDisplayNames = sqlGetter.getAllString(new MysqlValue("RANK_DISPLAY_NAME"));
+            List<Integer> rankPriorities = sqlGetter.getAllIntager(new MysqlValue("RANK_PRIORITY"));
+            List<String> rankPermissionsData = sqlGetter.getAllString(new MysqlValue("RANK_PERMISSIONS"));
+
+            for (int i = 0; i < rankUUIDs.size(); i++) {
+                UUID uuid = rankUUIDs.get(i);
+                String rankDisplayName = rankDisplayNames.get(i);
+                int rankPriority = rankPriorities.get(i);
+                String rankPermissionsDataString = rankPermissionsData.get(i);
+
+                if (uuid == null || rankDisplayName == null || rankPermissionsDataString == null) {
+                    continue;
+                }
+
+                Gson gson = new Gson();
+                List<RankPermission> rankPermissionList = gson.fromJson(rankPermissionsDataString, new TypeToken<List<RankPermission>>() {
+                }.getType());
+
+                Rank rank = new Rank(uuid.toString(), rankDisplayName, rankPriority, rankPermissionList);
+                allRanks.add(rank);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return allRanks;
     }
 
     public void removeRank(String id) {
