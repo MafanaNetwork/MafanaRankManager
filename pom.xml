@@ -39,7 +39,7 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <outputFile>C:\Users\tahac\Desktop\plugins\MafanaRankManager.jar</outputFile>
+                            <outputFile>C:\Users\tahac\Desktop\plugins\plugins\MafanaRankManager.jar</outputFile>
                         </configuration>
                     </execution>
                 </executions>
@@ -91,9 +91,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.MaskedWasTaken</groupId>
-            <artifactId>MafanaMysqlAPI-Remake</artifactId>
-            <version>1.9</version>
+            <groupId>com.github.MafanaNetwork</groupId>
+            <artifactId>MafanaDatabaseAPI</artifactId>
+            <version>1.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -102,7 +102,7 @@
             <version>2.10.1</version>
         </dependency>
         <dependency>
-            <groupId>com.github.MaskedWasTaken</groupId>
+            <groupId>com.github.MafanaNetwork</groupId>
             <artifactId>MafanaCommandNetwork</artifactId>
             <version>1.0</version>
             <scope>provided</scope>

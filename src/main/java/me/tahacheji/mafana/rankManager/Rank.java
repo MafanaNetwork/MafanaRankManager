@@ -12,6 +12,8 @@ import org.bukkit.scoreboard.Team;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class Rank implements RankEvents {
     private String rankID;
@@ -33,40 +35,49 @@ public class Rank implements RankEvents {
         this.rankPermissionList = Arrays.asList(rankPermissionList);
     }
 
-    public void registerPlayerWithRank(Player player) {
-        String name = rankDisplayName + " " + player.getName();
-        player.setDisplayName(name);
-        player.setPlayerListName(name);
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        Team team = scoreboard.getTeam(rankID);
-        if (team == null) {
-            team = scoreboard.registerNewTeam(rankID);
-        }
-        if(MafanaRankManager.getInstance().getPlayerRankDatabase().extractChatColor(player.getUniqueId()) != null) {
-            team.setPrefix(rankDisplayName + " " + MafanaRankManager.getInstance().getPlayerRankDatabase().extractChatColor(player.getUniqueId()));
-        } else {
-            team.setPrefix(rankDisplayName + " ");
-        }
-        team.addPlayer(player);
-
-        for (RankPermission rankPermission : rankPermissionList) {
-            Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin(rankPermission.getPlugin());
-            if (plugin != null) {
-                PermissionAttachment x = player.addAttachment(plugin);
-                x.setPermission(rankPermission.getPermission(), true);
-            }
-        }
-        if (MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player.getUniqueId()) != null) {
-            for (RankPermission rankPermission : MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player.getUniqueId())) {
-                Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin(rankPermission.getPlugin());
-                if (plugin != null) {
-                    PermissionAttachment x = player.addAttachment(plugin);
-                    x.setPermission(rankPermission.getPermission(), true);
+    public CompletableFuture<Void> registerPlayerWithRank(Player player) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                net.md_5.bungee.api.ChatColor chatColor = MafanaRankManager.getInstance().getPlayerRankDatabase().extractChatColor(player.getUniqueId()).get();
+                List<RankPermission> rankPermissions = MafanaRankManager.getInstance().getPlayerRankDatabase().getPermissions(player.getUniqueId()).get();
+                String name = rankDisplayName + " " + player.getName();
+                player.setDisplayName(name);
+                player.setPlayerListName(name);
+                Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                Team team = scoreboard.getTeam(rankID);
+                if (team == null) {
+                    team = scoreboard.registerNewTeam(rankID);
                 }
+                if(chatColor != null) {
+                    team.setPrefix(rankDisplayName + " " + MafanaRankManager.getInstance().getPlayerRankDatabase().extractChatColor(player.getUniqueId()));
+                } else {
+                    team.setPrefix(rankDisplayName + " ");
+                }
+                team.addPlayer(player);
+
+                for (RankPermission rankPermission : rankPermissionList) {
+                    Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin(rankPermission.getPlugin());
+                    if (plugin != null) {
+                        PermissionAttachment x = player.addAttachment(plugin);
+                        x.setPermission(rankPermission.getPermission(), true);
+                    }
+                }
+                if (rankPermissions != null) {
+                    for (RankPermission rankPermission : rankPermissions) {
+                        Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin(rankPermission.getPlugin());
+                        if (plugin != null) {
+                            PermissionAttachment x = player.addAttachment(plugin);
+                            x.setPermission(rankPermission.getPermission(), true);
+                        }
+                    }
+                }
+                player.recalculatePermissions();
+                player.updateCommands();
+                return null;
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
             }
-        }
-        player.recalculatePermissions();
-        player.updateCommands();
+        });
     }
 
     public ChatColor convertToBukkitChatColor(net.md_5.bungee.api.ChatColor bungeeChatColor) {
