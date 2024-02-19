@@ -72,18 +72,18 @@ public class RankDatabase extends MySQL {
         return CompletableFuture.supplyAsync(() -> {
             List<Rank> allRanks = new ArrayList<>();
             try {
-                List<UUID> rankUUIDs = sqlGetter.getAllUUIDAsync(new DatabaseValue("RANK_ID")).get();
+                List<String> rankUUIDs = sqlGetter.getAllStringAsync(new DatabaseValue("RANK_ID")).get();
                 List<String> rankDisplayNames = sqlGetter.getAllStringAsync(new DatabaseValue("RANK_DISPLAY_NAME")).get();
                 List<Integer> rankPriorities = sqlGetter.getAllIntegerAsync(new DatabaseValue("RANK_PRIORITY")).get();
                 List<String> rankPermissionsData = sqlGetter.getAllStringAsync(new DatabaseValue("RANK_PERMISSIONS")).get();
 
                 for (int i = 0; i < rankUUIDs.size(); i++) {
-                    UUID uuid = rankUUIDs.get(i);
+                    String id = rankUUIDs.get(i);
                     String rankDisplayName = rankDisplayNames.get(i);
                     int rankPriority = rankPriorities.get(i);
                     String rankPermissionsDataString = rankPermissionsData.get(i);
 
-                    if (uuid == null || rankDisplayName == null || rankPermissionsDataString == null) {
+                    if (id == null || rankDisplayName == null || rankPermissionsDataString == null) {
                         continue;
                     }
 
@@ -91,7 +91,7 @@ public class RankDatabase extends MySQL {
                     List<RankPermission> rankPermissionList = gson.fromJson(rankPermissionsDataString, new TypeToken<List<RankPermission>>() {
                     }.getType());
 
-                    Rank rank = new Rank(uuid.toString(), rankDisplayName, rankPriority, rankPermissionList);
+                    Rank rank = new Rank(id, rankDisplayName, rankPriority, rankPermissionList);
                     allRanks.add(rank);
                 }
                 return allRanks;
