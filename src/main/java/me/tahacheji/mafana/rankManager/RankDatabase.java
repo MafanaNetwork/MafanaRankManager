@@ -54,6 +54,52 @@ public class RankDatabase extends MySQL {
         });
     }
 
+    public Rank getRankSync(String rankID) {
+        UUID uuid = new EncryptionUtil().stringToUUID(rankID);
+        if (sqlGetter.exists(uuid)) {
+            Gson gson = new Gson();
+            List<RankPermission> rankPermissionList = gson.fromJson(sqlGetter.getString(uuid, new DatabaseValue("RANK_PERMISSIONS")), new TypeToken<List<RankPermission>>() {
+            }.getType());
+            Rank rank = new Rank(rankID, sqlGetter.getString(uuid, new DatabaseValue("RANK_DISPLAY_NAME")),
+                    sqlGetter.getInt(uuid, new DatabaseValue("RANK_PRIORITY")),
+                    rankPermissionList);
+            return rank;
+        }
+        return null;
+    }
+
+    public List<Rank> getAllRankSync() {
+        List<Rank> allRanks = new ArrayList<>();
+        try {
+            List<String> rankUUIDs = sqlGetter.getAllString(new DatabaseValue("RANK_ID"));
+            List<String> rankDisplayNames = sqlGetter.getAllString(new DatabaseValue("RANK_DISPLAY_NAME"));
+            List<Integer> rankPriorities = sqlGetter.getAllIntager(new DatabaseValue("RANK_PRIORITY"));
+            List<String> rankPermissionsData = sqlGetter.getAllString(new DatabaseValue("RANK_PERMISSIONS"));
+
+            for (int i = 0; i < rankUUIDs.size(); i++) {
+                String id = rankUUIDs.get(i);
+                String rankDisplayName = rankDisplayNames.get(i);
+                int rankPriority = rankPriorities.get(i);
+                String rankPermissionsDataString = rankPermissionsData.get(i);
+
+                if (id == null || rankDisplayName == null || rankPermissionsDataString == null) {
+                    continue;
+                }
+
+                Gson gson = new Gson();
+                List<RankPermission> rankPermissionList = gson.fromJson(rankPermissionsDataString, new TypeToken<List<RankPermission>>() {
+                }.getType());
+
+                Rank rank = new Rank(id, rankDisplayName, rankPriority, rankPermissionList);
+                allRanks.add(rank);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return allRanks;
+    }
+
     public CompletableFuture<Void> setRank(Rank rank) {
         return CompletableFuture.supplyAsync(() -> {
             UUID uuid = new EncryptionUtil().stringToUUID(rank.getRankID());
