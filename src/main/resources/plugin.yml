@@ -1,4 +1,4 @@
-depend: [MafanaMysqlAPI]
+depend: [MafanaDatabaseAPI]
 name: MafanaRankManager
 version: '${project.version}'
 main: me.tahacheji.mafana.MafanaRankManager

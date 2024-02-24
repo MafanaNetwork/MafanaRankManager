@@ -9,6 +9,7 @@ import me.tahacheji.mafana.data.SQLGetter;
 import me.tahacheji.mafana.util.EncryptionUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -22,46 +23,68 @@ public class RankDatabase extends MySQL {
     }
 
     public CompletableFuture<Void> addRank(Rank rank) {
-        return CompletableFuture.supplyAsync(() -> {
-            UUID uuid = new EncryptionUtil().stringToUUID(rank.getRankID());
-            if (!sqlGetter.exists(uuid)) {
-                Gson gson = new Gson();
-                sqlGetter.setStringAsync(new DatabaseValue("RANK_ID", uuid, rank.getRankID()));
-                sqlGetter.setStringAsync(new DatabaseValue("RANK_DISPLAY_NAME", uuid, rank.getRankDisplayName()));
-                sqlGetter.setIntAsync(new DatabaseValue("RANK_PRIORITY", uuid, rank.getRankPriority()));
-                sqlGetter.setStringAsync(new DatabaseValue("RANK_PERMISSIONS", uuid, gson.toJson(rank.getRankPermissionList())));
-            }
-            return null;
-        });
+        UUID uuid = new EncryptionUtil().stringToUUID(rank.getRankID());
+        return sqlGetter.existsAsync(uuid)
+                .thenComposeAsync(exists -> {
+                    if (!exists) {
+                        Gson gson = new Gson();
+                        sqlGetter.setStringAsync(new DatabaseValue("RANK_ID", uuid, rank.getRankID()));
+                        sqlGetter.setStringAsync(new DatabaseValue("RANK_DISPLAY_NAME", uuid, rank.getRankDisplayName()));
+                        sqlGetter.setIntAsync(new DatabaseValue("RANK_PRIORITY", uuid, rank.getRankPriority()));
+                        sqlGetter.setStringAsync(new DatabaseValue("RANK_PERMISSIONS", uuid, gson.toJson(rank.getRankPermissionList())));
+                    }
+                    return CompletableFuture.completedFuture(null); // No need to perform any actions
+                });
     }
 
+
     public CompletableFuture<Rank> getRank(String rankID) {
-        return CompletableFuture.supplyAsync(() -> {
-            UUID uuid = new EncryptionUtil().stringToUUID(rankID);
-            if (sqlGetter.exists(uuid)) {
-                try {
-                    Gson gson = new Gson();
-                    List<RankPermission> rankPermissionList = gson.fromJson(sqlGetter.getStringAsync(uuid, new DatabaseValue("RANK_PERMISSIONS")).get(), new TypeToken<List<RankPermission>>() {
-                        }.getType());
-                    return new Rank(rankID, sqlGetter.getStringAsync(uuid, new DatabaseValue("RANK_DISPLAY_NAME")).get(),
-                            sqlGetter.getIntAsync(uuid, new DatabaseValue("RANK_PRIORITY")).get(),
-                            rankPermissionList);
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            return null;
-        });
+        UUID uuid = new EncryptionUtil().stringToUUID(rankID);
+        try {
+            return sqlGetter.existsAsync(uuid)
+                    .thenComposeAsync(exists -> {
+                        if (exists) {
+                            Gson gson = new Gson();
+                            CompletableFuture<String> rankNameFuture = sqlGetter.getStringAsync(uuid, new DatabaseValue("RANK_DISPLAY_NAME"));
+                            CompletableFuture<Integer> rankPriorityFuture = sqlGetter.getIntAsync(uuid, new DatabaseValue("RANK_PRIORITY"));
+                            CompletableFuture<String> rankPermissionsDataFuture = sqlGetter.getStringAsync(uuid, new DatabaseValue("RANK_PERMISSIONS"));
+
+                            // Combine all futures and wait for their completion
+                            return CompletableFuture.allOf(rankNameFuture, rankPriorityFuture, rankPermissionsDataFuture)
+                                    .thenApplyAsync(voidResult -> {
+                                        try {
+                                            // Get the results of individual futures
+                                            String rankName = rankNameFuture.get();
+                                            int rankPriority = rankPriorityFuture.get();
+                                            String rankPermissionsData = rankPermissionsDataFuture.get();
+
+                                            // Parse JSON and create Rank object
+                                            List<RankPermission> rankPermissionList = gson.fromJson(rankPermissionsData, new TypeToken<List<RankPermission>>() {
+                                            }.getType());
+                                            return new Rank(rankID, rankName, rankPriority, rankPermissionList);
+                                        } catch (InterruptedException | ExecutionException e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                    });
+                        } else {
+                            // If the rank does not exist, return null
+                            return CompletableFuture.completedFuture(null);
+                        }
+                    });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
+
 
     public Rank getRankSync(String rankID) {
         UUID uuid = new EncryptionUtil().stringToUUID(rankID);
-        if (sqlGetter.exists(uuid)) {
+        if (sqlGetter.existsSync(uuid)) {
             Gson gson = new Gson();
-            List<RankPermission> rankPermissionList = gson.fromJson(sqlGetter.getString(uuid, new DatabaseValue("RANK_PERMISSIONS")), new TypeToken<List<RankPermission>>() {
+            List<RankPermission> rankPermissionList = gson.fromJson(sqlGetter.getStringSync(uuid, new DatabaseValue("RANK_PERMISSIONS")), new TypeToken<List<RankPermission>>() {
             }.getType());
-            Rank rank = new Rank(rankID, sqlGetter.getString(uuid, new DatabaseValue("RANK_DISPLAY_NAME")),
-                    sqlGetter.getInt(uuid, new DatabaseValue("RANK_PRIORITY")),
+            Rank rank = new Rank(rankID, sqlGetter.getStringSync(uuid, new DatabaseValue("RANK_DISPLAY_NAME")),
+                    sqlGetter.getIntSync(uuid, new DatabaseValue("RANK_PRIORITY")),
                     rankPermissionList);
             return rank;
         }
@@ -71,10 +94,10 @@ public class RankDatabase extends MySQL {
     public List<Rank> getAllRankSync() {
         List<Rank> allRanks = new ArrayList<>();
         try {
-            List<String> rankUUIDs = sqlGetter.getAllString(new DatabaseValue("RANK_ID"));
-            List<String> rankDisplayNames = sqlGetter.getAllString(new DatabaseValue("RANK_DISPLAY_NAME"));
-            List<Integer> rankPriorities = sqlGetter.getAllIntager(new DatabaseValue("RANK_PRIORITY"));
-            List<String> rankPermissionsData = sqlGetter.getAllString(new DatabaseValue("RANK_PERMISSIONS"));
+            List<String> rankUUIDs = sqlGetter.getAllStringSync(new DatabaseValue("RANK_ID"));
+            List<String> rankDisplayNames = sqlGetter.getAllStringSync(new DatabaseValue("RANK_DISPLAY_NAME"));
+            List<Integer> rankPriorities = sqlGetter.getAllIntSync(new DatabaseValue("RANK_PRIORITY"));
+            List<String> rankPermissionsData = sqlGetter.getAllStringSync(new DatabaseValue("RANK_PERMISSIONS"));
 
             for (int i = 0; i < rankUUIDs.size(); i++) {
                 String id = rankUUIDs.get(i);
@@ -103,7 +126,7 @@ public class RankDatabase extends MySQL {
     public CompletableFuture<Void> setRank(Rank rank) {
         return CompletableFuture.supplyAsync(() -> {
             UUID uuid = new EncryptionUtil().stringToUUID(rank.getRankID());
-            if (sqlGetter.exists(uuid)) {
+            if (sqlGetter.existsSync(uuid)) {
                 Gson gson = new Gson();
                 sqlGetter.setStringAsync(new DatabaseValue("RANK_ID", uuid, rank.getRankID()));
                 sqlGetter.setStringAsync(new DatabaseValue("RANK_DISPLAY_NAME", uuid, rank.getRankDisplayName()));
@@ -116,37 +139,46 @@ public class RankDatabase extends MySQL {
 
     public CompletableFuture<List<Rank>> getAllRanks() {
         return CompletableFuture.supplyAsync(() -> {
-            List<Rank> allRanks = new ArrayList<>();
             try {
-                List<String> rankUUIDs = sqlGetter.getAllStringAsync(new DatabaseValue("RANK_ID")).get();
-                List<String> rankDisplayNames = sqlGetter.getAllStringAsync(new DatabaseValue("RANK_DISPLAY_NAME")).get();
-                List<Integer> rankPriorities = sqlGetter.getAllIntegerAsync(new DatabaseValue("RANK_PRIORITY")).get();
-                List<String> rankPermissionsData = sqlGetter.getAllStringAsync(new DatabaseValue("RANK_PERMISSIONS")).get();
+                CompletableFuture<List<String>> rankUUIDsFuture = sqlGetter.getAllStringAsync(new DatabaseValue("RANK_ID"));
+                CompletableFuture<List<String>> rankDisplayNamesFuture = sqlGetter.getAllStringAsync(new DatabaseValue("RANK_DISPLAY_NAME"));
+                CompletableFuture<List<Integer>> rankPrioritiesFuture = sqlGetter.getAllIntegerAsync(new DatabaseValue("RANK_PRIORITY"));
+                CompletableFuture<List<String>> rankPermissionsDataFuture = sqlGetter.getAllStringAsync(new DatabaseValue("RANK_PERMISSIONS"));
 
-                for (int i = 0; i < rankUUIDs.size(); i++) {
-                    String id = rankUUIDs.get(i);
-                    String rankDisplayName = rankDisplayNames.get(i);
-                    int rankPriority = rankPriorities.get(i);
-                    String rankPermissionsDataString = rankPermissionsData.get(i);
+                return CompletableFuture.allOf(rankUUIDsFuture, rankDisplayNamesFuture, rankPrioritiesFuture, rankPermissionsDataFuture)
+                        .thenApply(ignored -> {
+                            List<String> rankUUIDs = rankUUIDsFuture.join();
+                            List<String> rankDisplayNames = rankDisplayNamesFuture.join();
+                            List<Integer> rankPriorities = rankPrioritiesFuture.join();
+                            List<String> rankPermissionsData = rankPermissionsDataFuture.join();
 
-                    if (id == null || rankDisplayName == null || rankPermissionsDataString == null) {
-                        continue;
-                    }
+                            List<Rank> allRanks = new ArrayList<>();
+                            for (int i = 0; i < rankUUIDs.size(); i++) {
+                                String id = rankUUIDs.get(i);
+                                String rankDisplayName = rankDisplayNames.get(i);
+                                int rankPriority = rankPriorities.get(i);
+                                String rankPermissionsDataString = rankPermissionsData.get(i);
 
-                    Gson gson = new Gson();
-                    List<RankPermission> rankPermissionList = gson.fromJson(rankPermissionsDataString, new TypeToken<List<RankPermission>>() {
-                    }.getType());
+                                if (id == null || rankDisplayName == null || rankPermissionsDataString == null) {
+                                    continue;
+                                }
 
-                    Rank rank = new Rank(id, rankDisplayName, rankPriority, rankPermissionList);
-                    allRanks.add(rank);
-                }
-                return allRanks;
+                                Gson gson = new Gson();
+                                List<RankPermission> rankPermissionList = gson.fromJson(rankPermissionsDataString, new TypeToken<List<RankPermission>>() {
+                                }.getType());
+
+                                Rank rank = new Rank(id, rankDisplayName, rankPriority, rankPermissionList);
+                                allRanks.add(rank);
+                            }
+                            return allRanks;
+                        }).join();
             } catch (Exception e) {
                 e.printStackTrace();
+                return Collections.emptyList();
             }
-            return null;
         });
     }
+
 
     public CompletableFuture<Void> removeRank(String id) {
         return sqlGetter.removeStringAsync(id, new DatabaseValue("RANK_ID"));

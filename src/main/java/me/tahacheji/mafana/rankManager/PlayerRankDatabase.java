@@ -27,61 +27,84 @@ public class PlayerRankDatabase extends MySQL {
     }
 
     public CompletableFuture<Void> setPlayerRank(UUID offlinePlayer, String id) {
-        return CompletableFuture.supplyAsync(() -> {
-            Rank rank = null;
-            try {
-                rank = MafanaRankManager.getInstance().getRankDatabase().getRank(id).get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-            if(rank != null) {
-                sqlGetter.setStringAsync(new DatabaseValue("NAME", offlinePlayer, Bukkit.getOfflinePlayer(offlinePlayer).getName()));
-                sqlGetter.setStringAsync(new DatabaseValue("RANK_ID", offlinePlayer, id));
-                sqlGetter.setStringAsync(new DatabaseValue("COLOR", offlinePlayer, ""));
-                sqlGetter.setStringAsync(new DatabaseValue("PERMISSIONS", offlinePlayer, ""));
-            }
-            return null;
-        });
+        return MafanaRankManager.getInstance().getRankDatabase().getRank(id)
+                .thenAcceptAsync(rank -> {
+                    if (rank != null) {
+                        sqlGetter.setStringAsync(new DatabaseValue("NAME", offlinePlayer, Bukkit.getOfflinePlayer(offlinePlayer).getName()));
+                        sqlGetter.setStringAsync(new DatabaseValue("RANK_ID", offlinePlayer, id));
+                        sqlGetter.setStringAsync(new DatabaseValue("COLOR", offlinePlayer, ""));
+                        sqlGetter.setStringAsync(new DatabaseValue("PERMISSIONS", offlinePlayer, ""));
+                    }
+                });
     }
+
 
     public CompletableFuture<Rank> getPlayerRank(UUID offlinePlayer) {
-        if(sqlGetter.exists(offlinePlayer)) {
-            return MafanaRankManager.getInstance().getRankDatabase().getRank(sqlGetter.getString(offlinePlayer, new DatabaseValue("RANK_ID")));
-        }
-        return null;
+        return sqlGetter.existsAsync(offlinePlayer)
+                .thenComposeAsync(exists -> {
+                    if (exists) {
+                        return sqlGetter.getStringAsync(offlinePlayer, new DatabaseValue("RANK_ID"))
+                                .thenComposeAsync(rankId -> {
+                                    try {
+                                        if (rankId != null) {
+                                            return MafanaRankManager.getInstance().getRankDatabase().getRank(rankId);
+                                        } else {
+                                            // Return null if the rank ID is null
+                                            return CompletableFuture.completedFuture(null);
+                                        }
+                                    } catch (Exception e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                    } else {
+                        // Return null if the player's rank doesn't exist
+                        return CompletableFuture.completedFuture(null);
+                    }
+                });
     }
 
+
+
+
     public CompletableFuture<Void> setColor(UUID uuid, String color) {
-        if(sqlGetter.exists(uuid)) {
-           return sqlGetter.setStringAsync(new DatabaseValue("COLOR", uuid, color));
-        }
-        return null;
+        return sqlGetter.existsAsync(uuid)
+                .thenComposeAsync(exists -> {
+                    if (exists) {
+                        return sqlGetter.setStringAsync(new DatabaseValue("COLOR", uuid, color));
+                    } else {
+                        // Return a completed future with null if the UUID doesn't exist
+                        return CompletableFuture.completedFuture(null);
+                    }
+                });
     }
 
     public CompletableFuture<String> getColor(UUID uuid) {
-        if(sqlGetter.exists(uuid)) {
-            return sqlGetter.getStringAsync(uuid, new DatabaseValue("COLOR"));
-        }
-        return null;
+        return sqlGetter.existsAsync(uuid)
+                .thenComposeAsync(exists -> {
+                    if (exists) {
+                        return sqlGetter.getStringAsync(uuid, new DatabaseValue("COLOR"));
+                    } else {
+                        // Return a completed future with null if the UUID doesn't exist
+                        return CompletableFuture.completedFuture(null);
+                    }
+                });
     }
 
+
     public CompletableFuture<ChatColor> extractChatColor(UUID uuid) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                if(getColor(uuid).get() != null) {
-                    Pattern pattern = Pattern.compile("(?i)(&|§)([0-9a-fk-or])");
-                    Matcher matcher = pattern.matcher(getColor(uuid).get());
-                    if (matcher.find()) {
-                        String chatColorCode = matcher.group();
-                        return ChatColor.getByChar(chatColorCode.charAt(1));
-                    }
+        return getColor(uuid).thenApplyAsync(colorString -> {
+            if (colorString != null) {
+                Pattern pattern = Pattern.compile("(?i)(&|§)([0-9a-fk-or])");
+                Matcher matcher = pattern.matcher(colorString);
+                if (matcher.find()) {
+                    String chatColorCode = matcher.group();
+                    return ChatColor.getByChar(chatColorCode.charAt(1));
                 }
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
             }
             return null;
         });
     }
+
 
     public CompletableFuture<List<RankPermission>> getPermissions(UUID offlinePlayer) {
         CompletableFuture<List<RankPermission>> future = new CompletableFuture<>();
