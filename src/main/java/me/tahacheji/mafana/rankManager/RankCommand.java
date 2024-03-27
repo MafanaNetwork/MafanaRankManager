@@ -14,11 +14,11 @@ import java.util.concurrent.CompletableFuture;
 public class RankCommand {
 
     @Command(names = {"mrm setRank", "mafanarank setRank", "mafanarankmanager setRank"}, permission = "mafana.admin", playerOnly = false)
-    public void setPlayerRank(CommandSender sender, @Param(name = "player") OfflinePlayer target, @Param(name = "rankID", concated = true) String rankID) {
-        CompletableFuture<Rank> z = MafanaRankManager.getInstance().getRankDatabase().getRank(rankID);
+    public void setPlayerRank(CommandSender sender, @Param(name = "player") OfflinePlayer target, @Param(name = "rankID", concated = true) Rank rankID) {
+        CompletableFuture<Rank> z = MafanaRankManager.getInstance().getRankDatabase().getRank(rankID.getRankID());
         z.thenAcceptAsync(rank -> {
             if (rank != null) {
-                MafanaRankManager.getInstance().getPlayerRankDatabase().setPlayerRank(target.getUniqueId(), rankID);
+                MafanaRankManager.getInstance().getPlayerRankDatabase().setPlayerRank(target.getUniqueId(), rankID.getRankID());
                 sender.sendMessage(ChatColor.GREEN + "Rank updated successfully from player: " + target.getName());
             } else {
                 sender.sendMessage(ChatColor.RED + "Rank not found.");

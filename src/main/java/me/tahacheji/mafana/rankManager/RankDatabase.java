@@ -28,14 +28,15 @@ public class RankDatabase extends MySQL {
                 .thenComposeAsync(exists -> {
                     if (!exists) {
                         Gson gson = new Gson();
-                        sqlGetter.setStringAsync(new DatabaseValue("RANK_ID", uuid, rank.getRankID()));
-                        sqlGetter.setStringAsync(new DatabaseValue("RANK_DISPLAY_NAME", uuid, rank.getRankDisplayName()));
-                        sqlGetter.setIntAsync(new DatabaseValue("RANK_PRIORITY", uuid, rank.getRankPriority()));
-                        sqlGetter.setStringAsync(new DatabaseValue("RANK_PERMISSIONS", uuid, gson.toJson(rank.getRankPermissionList())));
+                        return sqlGetter.setStringAsync(new DatabaseValue("RANK_ID", uuid, rank.getRankID()))
+                                .thenCompose(__ -> sqlGetter.setStringAsync(new DatabaseValue("RANK_DISPLAY_NAME", uuid, rank.getRankDisplayName())))
+                                .thenCompose(__ -> sqlGetter.setIntAsync(new DatabaseValue("RANK_PRIORITY", uuid, rank.getRankPriority())))
+                                .thenCompose(__ -> sqlGetter.setStringAsync(new DatabaseValue("RANK_PERMISSIONS", uuid, gson.toJson(rank.getRankPermissionList()))));
                     }
                     return CompletableFuture.completedFuture(null); // No need to perform any actions
                 });
     }
+
 
 
     public CompletableFuture<Rank> getRank(String rankID) {
@@ -184,10 +185,8 @@ public class RankDatabase extends MySQL {
         return sqlGetter.removeStringAsync(id, new DatabaseValue("RANK_ID"));
     }
 
-    @Override
     public void connect() {
-        super.connect();
-        if (this.isConnected()) sqlGetter.createTable("mafana_rank_manager",
+        sqlGetter.createTable("mafana_rank_manager",
                 new DatabaseValue("RANK_ID", ""),
                 new DatabaseValue("RANK_DISPLAY_NAME", ""),
                 new DatabaseValue("RANK_PRIORITY", 0),

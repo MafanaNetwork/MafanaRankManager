@@ -28,13 +28,14 @@ public class PlayerRankDatabase extends MySQL {
 
     public CompletableFuture<Void> setPlayerRank(UUID offlinePlayer, String id) {
         return MafanaRankManager.getInstance().getRankDatabase().getRank(id)
-                .thenAcceptAsync(rank -> {
+                .thenComposeAsync(rank -> {
                     if (rank != null) {
-                        sqlGetter.setStringAsync(new DatabaseValue("NAME", offlinePlayer, Bukkit.getOfflinePlayer(offlinePlayer).getName()));
-                        sqlGetter.setStringAsync(new DatabaseValue("RANK_ID", offlinePlayer, id));
-                        sqlGetter.setStringAsync(new DatabaseValue("COLOR", offlinePlayer, ""));
-                        sqlGetter.setStringAsync(new DatabaseValue("PERMISSIONS", offlinePlayer, ""));
+                        return sqlGetter.setStringAsync(new DatabaseValue("NAME", offlinePlayer, Bukkit.getOfflinePlayer(offlinePlayer).getName()))
+                                .thenCompose(__ -> sqlGetter.setStringAsync(new DatabaseValue("RANK_ID", offlinePlayer, id)))
+                                .thenCompose(__ -> sqlGetter.setStringAsync(new DatabaseValue("COLOR", offlinePlayer, "")))
+                                .thenCompose(__ -> sqlGetter.setStringAsync(new DatabaseValue("PERMISSIONS", offlinePlayer, "")));
                     }
+                    return CompletableFuture.completedFuture(null);
                 });
     }
 
@@ -62,8 +63,6 @@ public class PlayerRankDatabase extends MySQL {
                     }
                 });
     }
-
-
 
 
     public CompletableFuture<Void> setColor(UUID uuid, String color) {
@@ -121,10 +120,8 @@ public class PlayerRankDatabase extends MySQL {
         return sqlGetter.setStringAsync(new DatabaseValue("PERMISSIONS", player, gson.toJson(rankPermissionList)));
     }
 
-    @Override
     public void connect() {
-        super.connect();
-        if (this.isConnected()) sqlGetter.createTable("mafana_player_rank_manager",
+        sqlGetter.createTable("mafana_player_rank_manager",
                 new DatabaseValue("NAME", ""),
                 new DatabaseValue("RANK_ID", ""),
                 new DatabaseValue("COLOR", ""),

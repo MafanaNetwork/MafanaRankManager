@@ -41,8 +41,8 @@ public final class MafanaRankManager extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        rankDatabase.disconnect();
-        playerRankDatabase.disconnect();
+        rankDatabase.close();
+        playerRankDatabase.close();
     }
 
     public RankDatabase getRankDatabase() {

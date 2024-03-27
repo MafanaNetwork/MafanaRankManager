@@ -23,18 +23,14 @@ public class RankEvent implements Listener {
         Player player = event.getPlayer();
         event.setJoinMessage("");
         CompletableFuture.supplyAsync(() -> {
-            try {
-                Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId()).get();
-                if (rank != null) {
-                    rank.registerPlayerWithRank(player);
-                    rank.playerJoinEvent(player, event);
-                } else {
-                    MafanaRankManager.getInstance().getPlayerRankDatabase().setPlayerRank(player.getUniqueId(), "COPPER");
-                    MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId()).get().registerPlayerWithRank(player);
-                    MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId()).get().playerJoinEvent(player, event);
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
+            Rank rank = MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId()).join();
+            if (rank != null) {
+                rank.registerPlayerWithRank(player);
+                rank.playerJoinEvent(player, event);
+            } else {
+                MafanaRankManager.getInstance().getPlayerRankDatabase().setPlayerRank(player.getUniqueId(), "COPPER");
+                MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId()).join().registerPlayerWithRank(player);
+                MafanaRankManager.getInstance().getPlayerRankDatabase().getPlayerRank(player.getUniqueId()).join().playerJoinEvent(player, event);
             }
             return null;
         });
